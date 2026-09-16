@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "toolbox"
+version = "0.1.0"
+description = "\"toolbox\" is a set of programs written in python to make easier everyday workflow"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{name = "Pedro Alberto Rosquete Ares", email = "rosquetearespedro06@gmail.com"}]
+license = { file = "LICENSE" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.1.0"]
+
+[project.urls]
+
+[project.scripts]
+toolbox = "toolbox.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["toolbox*"]
+
+# PYTEST
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
+cache_dir = "./.cache/pytest"
+
+# RUFF
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+output-format = "grouped" # (groups by file), default is 'full'
+show-fixes = true
+extend-exclude = ["tests/*"]
+cache-dir = "./.cache/ruff"
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "F", # Pyflakes
+    "I", # isort
+    "B", # flake8-bugbear
+    "UP", # pyupgrade
+    "SIM", # flake8-simplify
+    "C4", # flake8-comprehensions
+]
+ignore = [
+    'DTZ001', 'DTZ005', 'DTZ007', 'DTZ011', # datetime-timezone-checks
+    'E101' # indentation contains mixed spaces and tabs
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
