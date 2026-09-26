@@ -1,3 +1,5 @@
 __pycache__/
 .venv
 .vscode
+TODO.md
+toolbox.code-workspace

@@ -1,6 +1,5 @@
 import re
 import shutil
-import sys
 from argparse import Namespace
 from pathlib import Path
 

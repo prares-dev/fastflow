@@ -5,7 +5,7 @@ Module to centralize all handling of arguments throug CLI
 
 from argparse import ArgumentParser, Namespace
 
-from .commands import release
+from .commands import project, release
 
 
 class Parser:
@@ -27,6 +27,19 @@ class Parser:
         
         sub_commands = parser.add_subparsers(title="Programs", help="Programs available")
         
+        # PROJECT
+        new_project_parser = sub_commands.add_parser(
+            "project",
+            help = "Create the initial structure for a new project in the current directory"
+        )
+        
+        new_project_parser.add_argument(
+            "name", type=str, help="Name of the project to be created."
+        )
+        
+        new_project_parser.set_defaults(func=project.main)
+        
+        # RELEASE
         release_parser = sub_commands.add_parser(
             "release", 
             help = "Release an especific version of a program/package to PyPi."
