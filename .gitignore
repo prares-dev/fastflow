@@ -1,5 +1,21 @@
+# Local development
+.venv/
+.vscode/
+todo.md
+*.code-workspace
+
+# Python caches and generated files
 __pycache__/
-.venv
-.vscode
-TODO.md
-toolbox.code-workspace
+*.py[codz]
+.cache/
+.pytest_cache/
+.ruff_cache/
+
+# Test and coverage output
+.coverage
+htmlcov/
+
+# Build and installation artifacts
+build/
+dist/
+*.egg-info/
