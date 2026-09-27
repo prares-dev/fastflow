@@ -15,7 +15,7 @@ from typing import Callable
 try:
     import tomllib
 except ModuleNotFoundError:  # Python 3.9 and 3.10
-    import tomli as tomllib
+    import tomli as tomllib  # type: ignore
 
 from ..confirm import confirm
 
