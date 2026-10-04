@@ -265,7 +265,7 @@ class ReleaseManager:
                     ignore=self._ignore_build_files,
                 )
                 artifacts = self.build(output_dir, source_dir)
-            except (OSError, ReleaseError) as exc:
+            except (OSError, ReleaseError, KeyboardInterrupt) as exc:
                 self._write_atomically(original_content)
                 raise ReleaseError(
                     f"Build failed; restored the original project version. {exc}"
@@ -274,7 +274,7 @@ class ReleaseManager:
 
             try:
                 parent_commit, release_commit = self.commit()
-            except ReleaseError as exc:
+            except (ReleaseError, KeyboardInterrupt) as exc:
                 self._restore_after_commit_failure(original_content)
                 raise ReleaseError(
                     f"Local release commit failed; restored the original project version. {exc}"
@@ -284,7 +284,7 @@ class ReleaseManager:
             print("Uploading to PyPI...")
             try:
                 self.upload(artifacts)
-            except ReleaseError as exc:
+            except (ReleaseError, KeyboardInterrupt) as exc:
                 try:
                     self._rollback_release_commit(parent_commit, release_commit)
                 except ReleaseError as rollback_error:
