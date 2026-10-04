@@ -65,7 +65,7 @@ class FakeRunner:
                 output_dir.mkdir(parents=True, exist_ok=True)
                 (output_dir / "demo-1.2.4.tar.gz").write_bytes(b"archive")
         if command[1:3] == ["-m", "twine"]:
-            self.uploaded_artifacts = [Path(path) for path in command[4:]]
+            self.uploaded_artifacts = [Path(path) for path in command[4:] if path != "--verbose"]
         if self.fail_command == "build" and command[1:3] == ["-m", "build"]:
             raise subprocess.CalledProcessError(1, command, stderr="simulated failure")
         if self.fail_command == "twine" and command[1:3] == ["-m", "twine"]:
