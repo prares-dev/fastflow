@@ -1,6 +1,6 @@
 import pytest
 
-from fastflow.commands.release import ReleaseError, ReleaseManager
+from flashflow.commands.release import ReleaseError, ReleaseManager
 
 
 @pytest.mark.parametrize("version", ["0.0.0", "1.0.2", "2.43.53"])

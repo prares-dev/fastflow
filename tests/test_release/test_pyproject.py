@@ -1,6 +1,6 @@
 import pytest
 
-from fastflow.commands.release import ReleaseError, ReleaseManager
+from flashflow.commands.release import ReleaseError, ReleaseManager
 
 
 def test_update_version_only_changes_project_version_and_preserves_comment(tmp_path):

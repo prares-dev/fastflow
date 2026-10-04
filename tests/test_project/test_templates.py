@@ -3,7 +3,7 @@ try:
 except ModuleNotFoundError:  # Python 3.9 and 3.10
     import tomli as tomllib
 
-from fastflow.commands.project import Configuration, ProjectManager
+from flashflow.commands.project import Configuration, ProjectManager
 
 
 def test_generated_pyproject_is_valid_toml_and_includes_expected_metadata(tmp_path):

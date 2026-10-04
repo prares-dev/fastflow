@@ -2,8 +2,8 @@ import subprocess
 
 import pytest
 
-from fastflow.commands.project import Configuration, ProjectError, ProjectManager
-from fastflow.process import ProcessRunner
+from flashflow.commands.project import Configuration, ProjectError, ProjectManager
+from flashflow.process import ProcessRunner
 
 
 class FakeExecutor:

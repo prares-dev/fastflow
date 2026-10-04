@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from fastflow.commands.release import ReleaseError, ReleaseManager
-from fastflow.process import ProcessRunner
+from flashflow.commands.release import ReleaseError, ReleaseManager
+from flashflow.process import ProcessRunner
 
 
 def make_project(tmp_path):

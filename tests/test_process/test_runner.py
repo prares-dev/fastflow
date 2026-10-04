@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 
-from fastflow.process import CommandExecutionError, ProcessRunner
+from flashflow.process import CommandExecutionError, ProcessRunner
 
 
 def test_runner_uses_argument_list_and_reports_success_output(tmp_path):
