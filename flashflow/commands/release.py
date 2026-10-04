@@ -253,7 +253,7 @@ class ReleaseManager:
         self.update_version(self.version)
         print(f"Updated version to {self.version} in pyproject.toml.")
 
-        with tempfile.TemporaryDirectory(prefix="fastflow-release-") as temporary_dir:
+        with tempfile.TemporaryDirectory(prefix="flashflow-release-") as temporary_dir:
             build_root = Path(temporary_dir)
             output_dir = build_root / "dist"
             source_dir = build_root / "source"

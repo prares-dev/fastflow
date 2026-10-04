@@ -18,8 +18,8 @@ class Parser:
     def build_parser(self) -> ArgumentParser:
         """Create the main parser and sub-commands."""
         parser = ArgumentParser(
-            prog="fastflow", 
-            description="\"fastflow\" is a set of programs written in python \
+            prog="flashflow", 
+            description="\"flashflow\" is a set of programs written in python \
                 to make easier everyday workflow",
             allow_abbrev=False, 
             epilog="Thanks for using %(prog)s, all feedback is appreciated"
@@ -62,7 +62,7 @@ class Parser:
 
         if not hasattr(args, "func"):
             # in case user invokes the program without arguments like:
-            # >>> fastflow
+            # >>> flashflow
             self.main_parser.print_help()
             return
         

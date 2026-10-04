@@ -1,4 +1,4 @@
-# fastflow
+# flashflow
 
 A small collection of Python commands for everyday development tasks.
 
@@ -13,7 +13,7 @@ python -m pip install -e ".[dev]"
 Run this from the directory where you want the initial project files:
 
 ```powershell
-fastflow project "My Project"
+flashflow project "My Project"
 ```
 
 The command creates a virtual environment, `.gitignore`, `README.md`, `LICENSE`,
@@ -26,7 +26,7 @@ distributing a generated project.
 Run the command from the project root after choosing a new `X.Y.Z` version:
 
 ```powershell
-fastflow release 1.2.3
+flashflow release 1.2.3
 ```
 
 The release command requires valid static `[project].version` metadata and a

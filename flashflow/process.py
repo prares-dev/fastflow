@@ -1,4 +1,4 @@
-"""Shared, shell-free subprocess execution for fastflow commands."""
+"""Shared, shell-free subprocess execution for flashflow commands."""
 
 from __future__ import annotations
 
