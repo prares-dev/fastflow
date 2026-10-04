@@ -266,7 +266,7 @@ class ReleaseManager:
                 )
                 artifacts = self.build(output_dir, source_dir)
             except (OSError, ReleaseError, KeyboardInterrupt) as exc:
-                self._write_atomically(original_content)
+                self._restore_before_commit(original_content)
                 raise ReleaseError(
                     f"Build failed; restored the original project version. {exc}"
                 ) from exc
@@ -275,7 +275,7 @@ class ReleaseManager:
             try:
                 parent_commit, release_commit = self.commit()
             except (ReleaseError, KeyboardInterrupt) as exc:
-                self._restore_after_commit_failure(original_content)
+                self._restore_before_commit(original_content)
                 raise ReleaseError(
                     f"Local release commit failed; restored the original project version. {exc}"
                 ) from exc
@@ -337,7 +337,7 @@ class ReleaseManager:
 
         self._run(["git", "reset", "--hard", parent_commit])
 
-    def _restore_after_commit_failure(self, original_content: str) -> None:
+    def _restore_before_commit(self, original_content: str) -> None:
         unstage_error = None
         try:
             self._run(["git", "restore", "--staged", "--", "pyproject.toml"])
