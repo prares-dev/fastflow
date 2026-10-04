@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "toolbox"
-version = "0.0.0"
-description = "\"toolbox\" is a set of programs written in python to make easier everyday workflow"
+name = "fastflow"
+version = "0.1.0"
+description = "\"fastflow\" is a set of programs written in python to make easier everyday workflow"
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [{name = "Pedro Alberto Rosquete Ares", email = "rosquetearespedro06@gmail.com"}]
@@ -18,10 +18,10 @@ dev = ["pytest>=8.0", "ruff>=0.1.0"]
 [project.urls]
 
 [project.scripts]
-toolbox = "toolbox.__main__:main"
+fastflow = "fastflow.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["toolbox*"]
+include = ["fastflow*"]
 
 # PYTEST
 

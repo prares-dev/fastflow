@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -18,6 +19,7 @@ except ModuleNotFoundError:  # Python 3.9 and 3.10
     import tomli as tomllib  # type: ignore
 
 from ..confirm import confirm
+from ..process import CommandExecutionError, ProcessRunner
 
 _VERSION_RE = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\Z")
 _SECTION_RE = re.compile(r"^\s*\[([^\]]+)]\s*(?:#.*)?$")
@@ -25,7 +27,6 @@ _VERSION_LINE_RE = re.compile(
     r"""(?P<prefix>\s*version\s*=\s*)(?P<quote>["'])(?P<version>[^"']+)(?P=quote)"""
     r"""(?P<suffix>\s*(?:\#.*)?)(?P<newline>\r?\n?)\Z"""
 )
-CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 Confirmer = Callable[[str], bool]
 
 
@@ -40,13 +41,13 @@ class ReleaseManager:
         self,
         version: str,
         project_dir: Path | str | None = None,
-        runner: CommandRunner = subprocess.run,
+        runner: ProcessRunner | None = None,
         confirmer: Confirmer = confirm,
     ) -> None:
         self.version = version.strip()
         self.project_dir = Path.cwd() if project_dir is None else Path(project_dir).resolve()
         self.pyproject_path = self.project_dir / "pyproject.toml"
-        self._runner = runner
+        self._runner = runner or ProcessRunner()
         self._confirm = confirmer
 
     @staticmethod
@@ -149,25 +150,13 @@ class ReleaseManager:
                     ) from cleanup_error
             raise ReleaseError(f"Could not update {self.pyproject_path}: {exc}") from exc
 
-    def _run(self, command: Sequence[str]) -> subprocess.CompletedProcess[str]:
+    def _run(
+        self, command: Sequence[str], cwd: Path | None = None
+    ) -> subprocess.CompletedProcess[str]:
         try:
-            result = self._runner(
-                list(command),
-                cwd=self.project_dir,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-        except (OSError, subprocess.CalledProcessError) as exc:
-            detail = getattr(exc, "stderr", None) or str(exc)
-            command_text = subprocess.list2cmdline(command)
-            raise ReleaseError(f"Command failed ({command_text}): {detail}") from exc
-
-        if result.returncode:
-            detail = result.stderr or result.stdout or "command returned a non-zero exit status"
-            command_text = subprocess.list2cmdline(command)
-            raise ReleaseError(f"Command failed ({command_text}): {detail}")
-        return result
+            return self._runner.run(command, cwd=cwd or self.project_dir)
+        except CommandExecutionError as exc:
+            raise ReleaseError(str(exc)) from exc
 
     def check_git_state(self) -> None:
         """Require a Git checkout with a clean working tree."""
@@ -185,8 +174,9 @@ class ReleaseManager:
                 f"Working tree is not clean; commit or stash changes first:\n{status}"
             )
 
-    def build(self, output_dir: Path) -> list[Path]:
-        """Build fresh distributions into an isolated directory."""
+    def build(self, output_dir: Path, source_dir: Path) -> list[Path]:
+        """Build a copied source tree so backends leave no generated files in the project."""
+        output_dir.mkdir(parents=True, exist_ok=True)
         self._run(
             [
                 sys.executable,
@@ -194,19 +184,25 @@ class ReleaseManager:
                 "build",
                 "--outdir",
                 str(output_dir),
-            ]
+            ],
+            cwd=source_dir,
         )
         artifacts = sorted(path for path in output_dir.iterdir() if path.is_file())
         if not artifacts:
             raise ReleaseError("Build completed but produced no distribution files.")
         return artifacts
 
-    def commit(self) -> None:
-        """Commit the version change locally."""
+    def commit(self) -> tuple[str, str]:
+        """Commit the version change locally and return its parent and new commit IDs."""
+        parent = self._run(["git", "rev-parse", "HEAD"]).stdout.strip()
         # -- prevents ambiguity and ensures Git treats pyproject.toml as a path,
         # not as a git option.
         self._run(["git", "add", "--", "pyproject.toml"])
         self._run(["git", "commit", "-m", f"Release v{self.version}"])
+        release_commit = self._run(["git", "rev-parse", "HEAD"]).stdout.strip()
+        if not parent or not release_commit or parent == release_commit:
+            raise ReleaseError("Could not verify the local release commit.")
+        return parent, release_commit
 
     def upload(self, artifacts: Sequence[Path]) -> None:
         """Upload only artifacts produced by this release build."""
@@ -215,13 +211,23 @@ class ReleaseManager:
     def publish_to_git(self) -> None:
         """Offer optional branch push and version-tag publication."""
         if self._confirm("Push the release commit to origin?"):
-            self._run(["git", "push"])
+            try:
+                self._run(["git", "push"])
+            except ReleaseError as exc:
+                raise ReleaseError(
+                    f"PyPI upload succeeded, but pushing the release commit failed: {exc}"
+                ) from exc
             print("Pushed release commit.")
 
         tag = f"v{self.version}"
         if self._confirm(f"Create and push git tag {tag}?"):
-            self._run(["git", "tag", tag])
-            self._run(["git", "push", "origin", tag])
+            try:
+                self._run(["git", "tag", tag])
+                self._run(["git", "push", "origin", tag])
+            except ReleaseError as exc:
+                raise ReleaseError(
+                    f"PyPI upload succeeded, but publishing Git tag {tag} failed: {exc}"
+                ) from exc
             print(f"Pushed tag {tag}.")
 
     def release(self) -> None:
@@ -238,10 +244,18 @@ class ReleaseManager:
         self.update_version(self.version)
         print(f"Updated version to {self.version} in pyproject.toml.")
 
-        with tempfile.TemporaryDirectory(prefix="toolbox-release-") as build_dir:
+        with tempfile.TemporaryDirectory(prefix="fastflow-release-") as temporary_dir:
+            build_root = Path(temporary_dir)
+            output_dir = build_root / "dist"
+            source_dir = build_root / "source"
             try:
                 print("Building package...")
-                artifacts = self.build(Path(build_dir))
+                shutil.copytree(
+                    self.project_dir,
+                    source_dir,
+                    ignore=self._ignore_build_files,
+                )
+                artifacts = self.build(output_dir, source_dir)
             except (OSError, ReleaseError) as exc:
                 self._write_atomically(original_content)
                 raise ReleaseError(
@@ -250,7 +264,7 @@ class ReleaseManager:
             print("Build completed.")
 
             try:
-                self.commit()
+                parent_commit, release_commit = self.commit()
             except ReleaseError as exc:
                 self._restore_after_commit_failure(original_content)
                 raise ReleaseError(
@@ -259,11 +273,60 @@ class ReleaseManager:
             print(f"Committed release v{self.version}.")
 
             print("Uploading to PyPI...")
-            self.upload(artifacts)
+            try:
+                self.upload(artifacts)
+            except ReleaseError as exc:
+                try:
+                    self._rollback_release_commit(parent_commit, release_commit)
+                except ReleaseError as rollback_error:
+                    raise ReleaseError(
+                        f"PyPI upload failed: {exc}\n"
+                        f"Could not safely roll back the local release commit: {rollback_error}"
+                    ) from exc
+                raise ReleaseError(
+                    "PyPI upload failed; the local release commit was removed and "
+                    f"the previous version restored. PyPI may have accepted the upload "
+                    f"before the failure was reported. {exc}"
+                ) from exc
             print("Upload completed.")
 
         self.publish_to_git()
         print(f"Release v{self.version} successful.")
+
+    @staticmethod
+    def _ignore_build_files(directory: str, names: list[str]) -> set[str]:
+        del directory
+        ignored = {
+            ".git",
+            ".venv",
+            ".cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            "__pycache__",
+            "build",
+            "dist",
+        }
+        return {
+            name
+            for name in names
+            if name in ignored or name.endswith(".egg-info")
+        }
+
+    def _rollback_release_commit(self, parent_commit: str, release_commit: str) -> None:
+        head = self._run(["git", "rev-parse", "HEAD"]).stdout.strip()
+        if head != release_commit:
+            raise ReleaseError(
+                "HEAD changed after the release commit; refusing to reset unrelated history."
+            )
+
+        status = self._run(["git", "status", "--porcelain"]).stdout.strip()
+        if status:
+            raise ReleaseError(
+                "The working tree changed after the release commit; refusing to discard "
+                f"those changes:\n{status}"
+            )
+
+        self._run(["git", "reset", "--hard", parent_commit])
 
     def _restore_after_commit_failure(self, original_content: str) -> None:
         unstage_error = None
