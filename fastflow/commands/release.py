@@ -206,7 +206,16 @@ class ReleaseManager:
 
     def upload(self, artifacts: Sequence[Path]) -> None:
         """Upload only artifacts produced by this release build."""
-        self._run([sys.executable, "-m", "twine", "upload", *(str(path) for path in artifacts)])
+        self._run(
+            [
+                sys.executable,
+                "-m",
+                "twine",
+                "upload",
+                "--verbose",
+                *(str(path) for path in artifacts),
+            ]
+        )
 
     def publish_to_git(self) -> None:
         """Offer optional branch push and version-tag publication."""

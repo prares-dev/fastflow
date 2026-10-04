@@ -107,6 +107,7 @@ def test_release_builds_commits_uploads_then_offers_git_publication(tmp_path):
     tag_index = calls.index(["git", "tag", "v1.2.4"])
     tag_push_index = calls.index(["git", "push", "origin", "v1.2.4"])
     assert build_index < commit_index < upload_index < push_index < tag_index < tag_push_index
+    assert "--verbose" in calls[upload_index]
     assert runner.uploaded_artifacts[0].name == "demo-1.2.4.tar.gz"
     assert not runner.uploaded_artifacts[0].exists()
     assert runner.build_cwd != tmp_path
